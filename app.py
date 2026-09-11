@@ -3,6 +3,7 @@ import pickle
 import numpy as np
 import os
 import pandas as pd
+import gdown
 
 # 1. Premium Page Configuration
 st.set_page_config(
@@ -68,10 +69,27 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# Map filenames to Google Drive File IDs
+DRIVE_FILES = {
+    'final_matrix.pkl': '1w2cX07BVPjdtWbx0-RwIRpl_tQtCc7EM',
+    'model.pkl': '11KO-NhXt92s2ZqXwA31VKHd0dZ_nJ_c2',
+    'book_names.pkl': '19xuBzck7HOIAZ9jadD3fvKtNcxjHvKCh',
+    'book_images.pkl': '1dAZ2Il9Ixm1vsjvf54jwYRamWpQSufSD',
+    'weightedData': '1ebi5iBgNdvP9DUZTJxETLRVYtsStigS_'
+}
+
 # 3. Robust Data Loader Block
-@st.cache_resource(show_spinner="Optimizing recommendation tensors...")
+@st.cache_resource(show_spinner="Downloading & optimizing recommendation tensors...")
 def load_system_data():
     base_path = os.path.dirname(os.path.abspath(__file__))
+    
+    # Download missing files from Google Drive
+    for filename, file_id in DRIVE_FILES.items():
+        file_path = os.path.join(base_path, filename)
+        if not os.path.exists(file_path):
+            url = f'https://drive.google.com/uc?id={file_id}'
+            st.info(f"Downloading dataset file: {filename}...")
+            gdown.download(url, file_path, quiet=False)
     
     try:
         model = pickle.load(open(os.path.join(base_path, 'model.pkl'), 'rb'))
@@ -79,7 +97,7 @@ def load_system_data():
         matrix = pickle.load(open(os.path.join(base_path, 'final_matrix.pkl'), 'rb'))
         images_df = pickle.load(open(os.path.join(base_path, 'book_images.pkl'), 'rb'))
     except Exception:
-        # Emergency absolute local path fallback
+        # Fallback pathing
         model = pickle.load(open('model.pkl', 'rb'))
         book_names = pickle.load(open('book_names.pkl', 'rb'))
         matrix = pickle.load(open('final_matrix.pkl', 'rb'))
